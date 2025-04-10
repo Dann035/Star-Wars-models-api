@@ -1,3 +1,19 @@
+# Diagrama
+
+## ![Diagrama](diagram.png)
+
+---
+
+- probar todos los endpoints GET
+- probar todos los endpoint POST
+- probar todos los endpoint PUT
+- probar todos los endpoint DELETE
+
+- probar el endpoint de favorite POST
+- probar el endpoint de favorite DELETE
+
+---
+
 <a href="https://www.breatheco.de"><img height="280" align="right" src="https://github.com/4GeeksAcademy/flask-rest-hello/blob/main/docs/assets/badge.png?raw=true"></a>
 
 # Flask Boilerplate for Junior Developers
