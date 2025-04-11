@@ -56,6 +56,8 @@ class Planet(db.Model):
 
 class Favorites(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=True, default='Unknown')
+    tipo: Mapped[str] = mapped_column(String(50), nullable=True, default='Unknown')
     id_user: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
     id_planet: Mapped[int] = mapped_column(
         ForeignKey('planet.id'), nullable=True)
@@ -68,12 +70,26 @@ class Favorites(db.Model):
     # serialize
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "id_user": self.id_user,
-            "id_planet": self.id_planet,
-            "id_character": self.id_character
-        }
+        if self.id_character:
+            return {
+                "id": self.id,
+                "tipo": "character",
+                "name": self.character.name,
+                "id_user": self.id_user
+            }
+        elif self.id_planet:
+            return {
+                "id": self.id,
+                "tipo": "planet",
+                "name": self.planet.name,
+                "id_user": self.id_user
+            }
+        else:
+            return {
+                "id": self.id,
+                "tipo": "unknown",
+                "id_user": self.id_user
+            }
 
     def full_serialize(self):
         data_favorite = {

@@ -4,13 +4,13 @@
 
 ---
 
-- probar todos los endpoints GET
-- probar todos los endpoint POST
-- probar todos los endpoint PUT
-- probar todos los endpoint DELETE
+-✅ probar todos los endpoint POST
+-✅ probar todos los endpoints GET
+-✅ probar todos los endpoint PUT
+-✅ probar todos los endpoints DELETE
 
-- probar el endpoint de favorite POST
-- probar el endpoint de favorite DELETE
+-   probar el endpoint de favorite POST
+-   probar el endpoint de favorite DELETE
 
 ---
 
@@ -20,11 +20,11 @@
 
 Create flask API's in minutes, [📹 watch the video tutorial](https://youtu.be/ORxQ-K3BzQA).
 
-- [Extensive documentation here](https://start.4geeksacademy.com).
-- Integrated with Pipenv for package managing.
-- Fast deloyment to render.com or heroku with `$ pipenv run deploy`.
-- Use of `.env` file.
-- SQLAlchemy integration for database abstraction.
+-   [Extensive documentation here](https://start.4geeksacademy.com).
+-   Integrated with Pipenv for package managing.
+-   Fast deloyment to render.com or heroku with `$ pipenv run deploy`.
+-   Use of `.env` file.
+-   SQLAlchemy integration for database abstraction.
 
 ## 1) Installation
 
@@ -49,10 +49,10 @@ pipenv run upgrade;
 
 There is an example API working with an example database. All your application code should be written inside the `./src/` folder.
 
-- src/main.py (it's where your endpoints should be coded)
-- src/models.py (your database tables and serialization logic)
-- src/utils.py (some reusable classes and functions)
-- src/admin.py (add your models to the admin and manage your data easily)
+-   src/main.py (it's where your endpoints should be coded)
+-   src/models.py (your database tables and serialization logic)
+-   src/utils.py (some reusable classes and functions)
+-   src/admin.py (add your models to the admin and manage your data easily)
 
 For a more detailed explanation, look for the tutorial inside the `docs` folder.
 

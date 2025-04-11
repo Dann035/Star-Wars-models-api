@@ -39,7 +39,7 @@ def handle_invalid_usage(error):
 
 
 def validar_password(password):
-    if len(password) < 4:
+    if len(password) < 3:
         return jsonify({"False": "La contraseña debe tener al menos 4 caracteres"})
 
     if not password[0].isupper():
@@ -94,7 +94,6 @@ def add_new_user():
     if not password:
         return jsonify({"message": "El usuario debe tener una contraseña"}), 400
 
-    validar_password(password)
 
     user = User(
         name=name,
@@ -217,15 +216,27 @@ def delete_people(id):
 
 @app.route('/favorite/people/<int:id>', methods=["POST"])
 def add_favorit_people(id):
-    exist = Favorites.query.filter_by(id_character=id, id_user=1)
+    try:
+        character = Character.query.get(id)
+        if not character:
+            return jsonify({"message": "Character no encontrado"}), 404
+        
+        exist = Favorites.query.filter_by(id_character=id, id_user=1).first()
+        if exist:
+            return jsonify({"message": "Already exist"}), 409
 
-    if exist:
-        return jsonify({"message": "Already exist"}), 409
-
-    favorite = Favorites(id_character=id, id_user=1, id_planet=None)
-    db.session.add(favorite)
-    db.session.commit()
-    return jsonify(favorite.serialize()), 201
+        favorite = Favorites(
+            id_character=id,
+            id_user=1,
+            id_planet=None,
+            name=character.name,  # Asignar el nombre del Character
+            tipo="character"      # Asignar el tipo como "character"
+        )
+        db.session.add(favorite)
+        db.session.commit()
+        return jsonify(favorite.serialize()), 201
+    except Exception as e:
+        return jsonify({"message": "Error al agregar el favorito", "error": str(e)}), 500
 
 
 @app.route('/favorite/people/<int:id>', methods=["DELETE"])
@@ -329,23 +340,33 @@ def delete_planet(id):
     }), 200
 
 
-@app.route('/favorite/planet/<int:id>', methods=["POST"])
+@app.route('/favorite/planets/<int:id>', methods=["POST"])
 def add_favorite_planet(id):
-    exist = Favorites.query.filter_by(id_planet=id, id_user=1).first()
-    print(exist)
-    if exist:
-        return jsonify({"message": "already exist"}), 409
-
-    favorite = Favorites(id_character=None, id_user=1, id_planet=id)
-    db.session.add(favorite)
-    db.session.commit()
-    return jsonify(favorite.serialize()), 200
+    try:
+        planet = Planet.query.get(id)
+        if not planet:
+            return jsonify({"message": "Planet no encontrado"}), 404
+        exist = Favorites.query.filter_by(id_planet=id, id_user=1).first()
+        if exist:
+            return jsonify({"message": "already exist"}), 409
+        favorite = Favorites(
+                id_character=None,
+                id_user=1,
+                id_planet=id,
+                name=planet.name,  # Asignar el nombre del Character
+                tipo="planet"      # Asignar el tipo como "character"
+            )
+        db.session.add(favorite)
+        db.session.commit()
+        return jsonify(favorite.serialize()), 200
+    except Exception as e:
+        return jsonify({"message": "Error al agregar planeta a favoritos", "error": str(e)}), 500
 
 
 @app.route('/favorite/planets/<int:id>', methods=["DELETE"])
 def delete_favorite_peopl(id):
     exist = Favorites.query.filter_by(id_planet=id, id_user=1).first()
-
+    
     if not exist:
         return jsonify({"message": "Este Favorito no existe"}), 404
 
@@ -353,7 +374,7 @@ def delete_favorite_peopl(id):
     db.session.commit()
     return jsonify({
         "message": "Plneta Favorite eliminado con exito",
-        "planet": exist
+        "planet": exist.serialize()
     }), 200
 
 
@@ -363,8 +384,21 @@ def get_all_favorites():
 
     if not favorites:
         return jsonify({"message": "No hay favoritos"}), 404
+    favorites_serialized = [fav.serialize() for fav in favorites]
+    return jsonify(favorites_serialized), 200
 
-    return jsonify(favorites.serialize()), 200
+@app.route('/users/<int:id>/favorites')
+def get_all_favorites_user(id):
+    user = User.query.get(id)
+    if not user:
+        return jsonify({"message": "User not exist"}), 404
+    
+    favorites = Favorites.query.filter_by(id_user=id).all()
+    if not favorites:
+        return jsonify({"message": "No hay favoritos"}), 404
+    
+    favorites_serialized = [fav.serialize() for fav in favorites]
+    return jsonify(favorites_serialized), 200
 
 
 # this only runs if `$ python src/app.py` is executed
