@@ -2,7 +2,9 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
+import bcrypt
 from flask import Flask, request, jsonify, url_for
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
@@ -23,10 +25,69 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+app.config['JWT_SECRET_KEY'] = '1234'
+jwt = JWTManager(app)
+
 MIGRATE = Migrate(app, db)
 db.init_app(app)
 CORS(app)
 setup_admin(app)
+
+
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({"msg": "Correo y contraseña son requeridos"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        return jsonify({"msg": "El usuario ya existe"}), 400
+
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'),bcrypt.gensalt())
+    
+    new_user = User(email=email, password=hashed_password.decode('utf-8'))
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"msg": "Usuario creado con éxito"}), 201
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({"msg": "Correo y contraseña son requeridos"}), 400
+
+
+    user = User.query.filter_by(email=email).first()
+    if not user or user.password != password:
+        return jsonify({"msg": "Correo o contraseña incorrectos"}), 401
+
+    # Crear JWT
+    access_token = create_access_token(identity=email)
+    return jsonify({"access_token": access_token}), 200
+
+@app.route('/private', methods=['GET'])
+@jwt_required()
+def private():
+    # Validar el usuario
+    current_user = get_jwt_identity()
+    return jsonify({"msg": f"Bienvenido {current_user}, esta es una página privada."}),200
+
+@app.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    return jsonify({"msg": "Sesión cerrada con éxito"}), 200
+
+
+
 
 # Handle/serialize errors like a JSON object
 
@@ -48,7 +109,7 @@ def validar_password(password):
     if not re.search(r'[@!#%+]', password):
         return jsonify({"False": "La contraseña debe contener al menos un símbolo especial (@, !, #, %, +)"})
 
-    return True, ""
+    return True
 
 
 def validar_email(email):
@@ -68,13 +129,13 @@ def get_all_users():
     users = User.query.all()
 
     if not users:
-        return jsonify({"message": "No existen usuarios"})
+        return jsonify({"message": "No existen usuarios"}), 404
 
     user_serialize = [user.serialize() for user in users if user.is_active]
     return jsonify(user_serialize), 200
 
 
-@app.route('/users', methods=['POST'])
+@app.route('/user', methods=['POST'])
 def add_new_user():
     data = request.json
 
@@ -88,9 +149,9 @@ def add_new_user():
     if not name:
         return jsonify({"message": "El usuario debe tener un nombre"}), 400
     if not email:
-        return jsonify({"message": "El usuario debe tener un email"}),
+        return jsonify({"message": "El usuario debe tener un email"}), 400
     if not validar_email(email):
-        return jsonify({"message": "El email no tiene un formato válido"}), 400
+        return jsonify({"message": "El email no tiene un formato válido"}), 406
     if not password:
         return jsonify({"message": "El usuario debe tener una contraseña"}), 400
 
@@ -108,7 +169,7 @@ def add_new_user():
         return jsonify({"message": "Error al crear el usuario", "error": str(e)}), 500
 
 
-@app.route('/users/<int:user_id>', methods=['DELETE'])
+@app.route('/user/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     exist = User.query.get(user_id)
 
@@ -148,7 +209,7 @@ def get_people(people_id):
 
 
 @app.route('/people', methods=["POST"])
-def add_new_character():
+def add_new_people():
     data = request.json
     name = data.get("name", "").strip()
     specie = data.get("specie", "").strip()
@@ -211,7 +272,7 @@ def delete_people(id):
     return jsonify({
         "message": "Character eliminado con exito",
         "character": exist.serialize()
-    })
+    }), 200
 
 
 @app.route('/favorite/people/<int:id>', methods=["POST"])
@@ -229,8 +290,8 @@ def add_favorit_people(id):
             id_character=id,
             id_user=1,
             id_planet=None,
-            name=character.name,  # Asignar el nombre del Character
-            tipo="character"      # Asignar el tipo como "character"
+            name=character.name,  # Hardcodear el nombre del Character en la tabla Favorites
+            tipo="character"      # Hardcodear el tipo como character en la tabla Favorites
         )
         db.session.add(favorite)
         db.session.commit()
@@ -305,7 +366,7 @@ def edit_planet(planet_id):
     name = data.get("name", "").strip()
 
     if not name:
-        return jsonify({"message": "El planeta debe tener un name"}), 404
+        return jsonify({"message": "El planeta debe tener un name"}), 400
 
     planet = Planet.query.get(planet_id)
 
@@ -353,8 +414,8 @@ def add_favorite_planet(id):
                 id_character=None,
                 id_user=1,
                 id_planet=id,
-                name=planet.name,  # Asignar el nombre del Character
-                tipo="planet"      # Asignar el tipo como "character"
+                name=planet.name,  # Harcodear el nombre del Planeta en la tabla Favorites
+                tipo="planet"      # Harcodear el tipo como planet en la tabla Favorites
             )
         db.session.add(favorite)
         db.session.commit()
